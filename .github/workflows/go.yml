@@ -2,8 +2,10 @@ name: Go Build and Release
 
 on:
   push:
+    branches:
+      - main  # 在 main 分支有提交时触发
     tags:
-      - '*'  # 仅在推送标签时触发
+      - '*'  # 以及在推送标签时触发
   pull_request:
     branches:
       - main  # 当有 pull request 到 main 分支时触发
