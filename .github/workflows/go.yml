@@ -48,8 +48,13 @@ jobs:
       - name: Get Tag
         id: get_tag
         run: |
-          TAG=$(git describe --tags --abbrev=0)  # 获取最新的标签
-          echo "TAG=$TAG" >> $GITHUB_ENV
+          TAG=$(git tag | tail -n 1)  # 获取最新的标签
+          if [ -z "$TAG" ]; then
+            echo "No tags found."
+            echo "TAG=none" >> $GITHUB_ENV  # 设置一个默认值
+          else
+            echo "TAG=$TAG" >> $GITHUB_ENV
+          fi
 
       - name: Build binaries
         run: |
@@ -69,7 +74,7 @@ jobs:
 
       - name: Create Release
         id: create_release
-        if: env.RELEASE_STATUS == '404'  # 仅在没有找到现有 Release 时创建
+        if: env.RELEASE_STATUS == '404' && env.TAG != 'none'  # 仅在没有找到现有 Release 时创建
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动生成的 token
@@ -82,7 +87,7 @@ jobs:
 
       - name: Upload binaries to release
         uses: actions/upload-release-asset@v1
-        if: env.RELEASE_STATUS == '404'  # 仅在没有找到现有 Release 时上传
+        if: env.RELEASE_STATUS == '404' && env.TAG != 'none'  # 仅在没有找到现有 Release 时上传
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ env.REPO_NAME }}-${{ env.TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
