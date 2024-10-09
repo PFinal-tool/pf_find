@@ -1,16 +1,16 @@
-name: Go Build
+name: Go Build and Release
 
 on:
   push:
     branches:
-      - main  # 当推送到 main 分支时触发
+      - main  # 仅在推送到 main 分支时触发
   pull_request:
     branches:
       - main  # 当有 pull request 到 main 分支时触发
 
 jobs:
   build:
-    name: Build and package Go binaries
+    name: Build and release Go binaries
     runs-on: ubuntu-latest
 
     strategy:
@@ -37,12 +37,40 @@ jobs:
         with:
           go-version: '1.23.2'  # 设置你需要的 Go 版本
 
-      - name: Build
+      - name: Set Version
+        id: version
+        run: |
+          # 使用 Git 提取最新的 commit hash 和日期时间戳生成版本号
+          VERSION=$(git log -1 --format="%h")-$(date +'%Y%m%d%H%M%S')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo ::set-output name=VERSION::$VERSION
+
+      - name: Build binaries
         run: |
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} .
 
-      - name: Upload artifacts
+      - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
           name: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
           path: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}  # 动态生成的版本号
+          release_name: "Go Binary Release ${{ steps.version.outputs.VERSION }}"
+          body: "Automatic release of Go binaries for Windows, Linux, and macOS."
+          draft: false
+          prerelease: false
+
+      - name: Upload binaries to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          asset_name: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          asset_content_type: application/octet-stream
