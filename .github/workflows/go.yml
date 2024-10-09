@@ -7,18 +7,13 @@ on:
   push:
     branches: [ "main" ]
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'  # 触发条件
   pull_request:
     branches: [ "main" ]
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
-
-    permissions:  # 添加权限配置
-      contents: write
-      actions: read
 
     strategy:
       matrix:
@@ -26,27 +21,28 @@ jobs:
         goarch: [amd64, arm64]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: "1.23.2"
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.2"
 
-    - name: Build
-      run: |
-          mkdir -p ./dist/${{ matrix.goos }}_${{ matrix.goarch }}
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ./dist/${{ matrix.goos }}_${{ matrix.goarch }}/pf_find-${{ matrix.goos }}_${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} -v ./main.go
+      - name: Build
+        run: |
+            mkdir -p ./dist/${{ matrix.goos }}_${{ matrix.goarch }}
+            GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ./dist/${{ matrix.goos }}_${{ matrix.goarch }}/pf_find-${{ matrix.goos }}_${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} -v ./main.go
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: pf_find-${{ matrix.goos }}_${{ matrix.goarch }}
-        path: ./dist/${{ matrix.goos }}_${{ matrix.goarch }}/pf_find*
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: pf_find-${{ matrix.goos }}_${{ matrix.goarch }}
+          path: ./dist/${{ matrix.goos }}_${{ matrix.goarch }}/pf_find*
 
   release:
-    needs: [build]
+    needs: build  # 依赖于 build 作业
     runs-on: ubuntu-latest
+
     steps:
       - name: Download Linux artifacts
         uses: actions/download-artifact@v3
@@ -54,19 +50,19 @@ jobs:
           name: pf_find-linux_amd64
           path: ./dist/linux_amd64/
 
-      - name: Download artifacts
+      - name: Download macOS amd64 artifacts
         uses: actions/download-artifact@v3
         with:
           name: pf_find-darwin_amd64
           path: ./dist/darwin_amd64/
 
-      - name: Download artifacts
+      - name: Download macOS arm64 artifacts
         uses: actions/download-artifact@v3
         with:
           name: pf_find-darwin_arm64
           path: ./dist/darwin_arm64/
 
-      - name: Download artifacts
+      - name: Download Windows artifacts
         uses: actions/download-artifact@v3
         with:
           name: pf_find-windows_amd64
@@ -78,8 +74,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}  # 只使用标签名
+          release_name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
 
@@ -93,7 +89,7 @@ jobs:
           asset_name: pf_find-linux_amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload Release Asset macOS amd
+      - name: Upload Release Asset macOS amd64
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
