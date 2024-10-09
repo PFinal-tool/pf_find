@@ -42,55 +42,79 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')  # 确保只有在标签推送时才运行
     steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./dist  # 将所有平台的构建产物下载到 dist 目录
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref_name }}  # 使用标签名而不是 ref_name
+          tag_name: ${{ github.ref_name }}  # 使用纯标签名
           release_name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-          path: ./dist
 
       # 上传其他平台的二进制文件
-      - name: Upload Release Asset Linux
+      - name: Upload Release Asset Linux (amd64)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/linux_amd64/pf_find-linux_amd64
+          asset_path: ./dist/pf_find-linux_amd64/pf_find-linux_amd64/pf_find-linux_amd64
           asset_name: pf_find-linux_amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload Release Asset macOS amd
+      - name: Upload Release Asset Linux (arm64)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/darwin_amd64/pf_find-darwin_amd64
+          asset_path: ./dist/pf_find-linux_arm64/pf_find-linux_arm64/pf_find-linux_arm64
+          asset_name: pf_find-linux_arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset macOS (amd64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/pf_find-darwin_amd64/pf_find-darwin_amd64/pf_find-darwin_amd64
           asset_name: pf_find-darwin_amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload Release Asset macOS arm
+      - name: Upload Release Asset macOS (arm64)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/darwin_arm64/pf_find-darwin_arm64
+          asset_path: ./dist/pf_find-darwin_arm64/pf_find-darwin_arm64/pf_find-darwin_arm64
           asset_name: pf_find-darwin_arm64
           asset_content_type: application/octet-stream
 
-      - name: Upload Release Asset Windows
+      - name: Upload Release Asset Windows (amd64)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/windows_amd64/pf_find-windows_amd64.exe
+          asset_path: ./dist/pf_find-windows_amd64/pf_find-windows_amd64/pf_find-windows_amd64.exe
           asset_name: pf_find-windows_amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset Windows (arm64)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/pf_find-windows_arm64/pf_find-windows_arm64/pf_find-windows_arm64.exe
+          asset_name: pf_find-windows_arm64.exe
           asset_content_type: application/octet-stream
