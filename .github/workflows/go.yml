@@ -2,8 +2,8 @@ name: Go Build and Release
 
 on:
   push:
-    branches:
-      - main  # 仅在推送到 main 分支时触发
+    tags:
+      - '*'  # 仅在推送标签时触发
   pull_request:
     branches:
       - main  # 当有 pull request 到 main 分支时触发
@@ -37,28 +37,27 @@ jobs:
         with:
           go-version: '1.23.2'  # 设置你需要的 Go 版本
 
-      - name: Set Version
-        id: version
-        run: |
-          # 使用 Git 提取最新的 commit hash 和日期时间戳生成版本号
-          VERSION=$(git log -1 --format="%h")-$(date +'%Y%m%d%H%M%S')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
       - name: Get Project Name
         id: project_name
         run: |
           REPO_NAME=${GITHUB_REPOSITORY#*/}
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
 
+      - name: Get Tag
+        id: get_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0)  # 获取最新的标签
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
       - name: Build binaries
         run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} .
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ${{ env.REPO_NAME }}-${{ env.TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} .
 
       - name: Upload binaries as artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
-          path: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          name: ${{ env.REPO_NAME }}-${{ env.TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          path: ${{ env.REPO_NAME }}-${{ env.TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
 
       - name: Create Release
         id: create_release
@@ -66,7 +65,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动生成的 token
         with:
-          release_name: "${{ env.REPO_NAME }} Release ${{ env.VERSION }}"
+          tag_name: ${{ env.TAG }}  # 使用 Git 标签作为版本号
+          release_name: "${{ env.REPO_NAME }} Release ${{ env.TAG }}"
           body: "Automatic release of Go binaries for Windows, Linux, and macOS."
           draft: false
           prerelease: false
@@ -75,6 +75,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
-          asset_name: findos-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          asset_path: ${{ env.REPO_NAME }}-${{ env.TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+          asset_name: ${{ env.REPO_NAME }}-${{ env.TAG }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
           asset_content_type: application/octet-stream
