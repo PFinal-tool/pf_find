@@ -40,15 +40,16 @@ jobs:
   release:
     needs: [build]
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')  # 确保只有在标签推送时才运行
     steps:
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}  # 使用标签名而不是 ref_name
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}  # 使用标签名而不是 ref_name
+          release_name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
 
