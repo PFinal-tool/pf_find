@@ -59,7 +59,7 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub 自动生成的 token
         with:
           tag_name: ${{ steps.version.outputs.VERSION }}  # 动态生成的版本号
           release_name: "Go Binary Release ${{ steps.version.outputs.VERSION }}"
