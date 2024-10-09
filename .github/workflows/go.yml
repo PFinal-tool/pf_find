@@ -16,6 +16,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:  # 添加权限配置
+      contents: write
+      actions: read
+
     strategy:
       matrix:
         goos: [linux, darwin, windows]
